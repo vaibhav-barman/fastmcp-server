@@ -72,6 +72,30 @@ def summarize(start_date, end_date, category=None):
         cols = [d[0] for d in cur.description]
         return [dict(zip(cols, r)) for r in cur.fetchall()]
 
+@mcp.tool()
+def update_expense(expense_id, date=None, amount=None, category=None, subcategory=None, note=None):
+    '''Edit an existing expense by id. Only the fields you pass are changed.'''
+    fields = {
+        "date": date,
+        "amount": amount,
+        "category": category,
+        "subcategory": subcategory,
+        "note": note,
+    }
+    updates = {k: v for k, v in fields.items() if v is not None}
+    if not updates:
+        return {"status": "error", "message": "No fields provided to update"}
+
+    set_clause = ", ".join(f"{col} = ?" for col in updates)
+    with sqlite3.connect(DB_PATH) as c:
+        cur = c.execute(
+            f"UPDATE expenses SET {set_clause} WHERE id = ?",
+            (*updates.values(), expense_id)
+        )
+        if cur.rowcount == 0:
+            return {"status": "error", "message": f"Expense {expense_id} not found"}
+        return {"status": "ok", "id": expense_id, "updated": list(updates)}
+
 @mcp.resource("expense://categories", mime_type="application/json")
 def categories():
     # Read fresh each time so you can edit the file without restarting
