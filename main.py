@@ -96,6 +96,15 @@ def update_expense(expense_id, date=None, amount=None, category=None, subcategor
             return {"status": "error", "message": f"Expense {expense_id} not found"}
         return {"status": "ok", "id": expense_id, "updated": list(updates)}
 
+@mcp.tool()
+def delete_expense(expense_id):
+    '''Delete an expense by id.'''
+    with sqlite3.connect(DB_PATH) as c:
+        cur = c.execute("DELETE FROM expenses WHERE id = ?", (expense_id,))
+        if cur.rowcount == 0:
+            return {"status": "error", "message": f"Expense {expense_id} not found"}
+        return {"status": "ok", "id": expense_id}
+
 @mcp.resource("expense://categories", mime_type="application/json")
 def categories():
     # Read fresh each time so you can edit the file without restarting
